@@ -2,9 +2,22 @@ from typing import Any
 
 
 class TelemetryService:
-    """Receives and validates telemetry in the software simulation."""
+    """Normalizes telemetry received from devices or simulators."""
 
-    def validate(self, telemetry: dict[str, Any]) -> bool:
-        required_fields = {"device_id", "timestamp"}
+    ALLOWED_FIELDS = {
+        "battery",
+        "altitude",
+        "speed",
+        "latitude",
+        "longitude",
+        "heading",
+        "temperature",
+        "flight_mode",
+    }
 
-        return required_fields.issubset(telemetry)
+    def normalize(self, telemetry: dict[str, Any]) -> dict[str, Any]:
+        return {
+            key: value
+            for key, value in telemetry.items()
+            if key in self.ALLOWED_FIELDS
+        }

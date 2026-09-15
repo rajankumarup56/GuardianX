@@ -1,10 +1,12 @@
+from app.models.device import Device
+from app.models.user import User
+
+
 class IdentityService:
-    """Handles future device/user identity verification."""
+    """Handles basic identity and trust checks."""
 
-    def verify_identity(self, identity: str) -> bool:
-        if not identity:
-            return False
+    def verify_user(self, user: User) -> bool:
+        return user.active
 
-        # Foundation placeholder.
-        # Real identity verification will be implemented later.
-        return True
+    def verify_device(self, device: Device) -> bool:
+        return device.active and device.trusted
