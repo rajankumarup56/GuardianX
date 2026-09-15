@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 
+from app.api.routes.events import router as events_router
 from app.api.routes.health import router as health_router
 from app.api.routes.security import router as security_router
+from app.api.routes.telemetry import router as telemetry_router
 
 
 app = FastAPI(
@@ -12,6 +14,8 @@ app = FastAPI(
 
 app.include_router(health_router, prefix="/api/v1")
 app.include_router(security_router, prefix="/api/v1")
+app.include_router(telemetry_router, prefix="/api/v1")
+app.include_router(events_router, prefix="/api/v1")
 
 
 @app.get("/")
