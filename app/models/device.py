@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
+
 from pydantic import BaseModel, Field
 
 from app.models.enums import RiskLevel
+from app.models.trust import TrustState
 
 
 class Device(BaseModel):
@@ -11,8 +13,9 @@ class Device(BaseModel):
     owner_id: str = Field(min_length=1, max_length=100)
 
     trusted: bool = False
-    active: bool = True
+    trust_state: TrustState = TrustState.UNKNOWN
 
+    active: bool = True
     risk_level: RiskLevel = RiskLevel.LOW
 
     registered_at: datetime = Field(
