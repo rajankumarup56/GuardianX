@@ -1,7 +1,7 @@
+import time
 from fastapi.testclient import TestClient
-
 from app.main import app
-
+from app.services.security_validator import SecurityValidator
 
 client = TestClient(app)
 
@@ -36,9 +36,7 @@ def test_security_evaluate_allows_trusted_owner_command():
     )
 
     assert response.status_code == 200
-
     data = response.json()
-
     assert data["decision"] == "BLOCK"
     assert data["risk_level"] == "LOW"
     assert data["risk_score"] == 20
@@ -74,9 +72,7 @@ def test_security_evaluate_blocks_untrusted_device():
     )
 
     assert response.status_code == 200
-
     data = response.json()
-
     assert data["decision"] == "BLOCK"
     assert data["risk_level"] == "HIGH"
     assert data["risk_score"] == 50
@@ -97,10 +93,51 @@ def test_telemetry_normalize_removes_unknown_fields():
     )
 
     assert response.status_code == 200
-
     data = response.json()
-
     assert data["battery"] == 87
     assert data["altitude"] == 42.5
     assert data["flight_mode"] == "OFFBOARD"
     assert "unknown_field" not in data
+
+
+def test_telemetry_evaluate_returns_critical_risk():
+    response = client.post(
+        "/api/v1/telemetry/evaluate",
+        json={
+            "battery": 15,
+            "temperature": 85,
+            "speed": 30,
+            "altitude": 42.5,
+            "unknown_field": "should_be_removed",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["risk_level"] == "CRITICAL"
+    assert data["risk_score"] == 80
+    assert data["telemetry"]["battery"] == 15
+    assert data["telemetry"]["temperature"] == 85
+    assert data["telemetry"]["speed"] == 30
+    assert data["telemetry"]["altitude"] == 42.5
+    assert "unknown_field" not in data["telemetry"]
+
+
+def test_security_validator_bounds():
+    validator = SecurityValidator()
+    ok, msg = validator.validate_telemetry_bounds({"speed": 50.0, "altitude": 100.0})
+    assert ok is True
+
+    ok, msg = validator.validate_telemetry_bounds({"speed": 9999.0, "altitude": 100.0})
+    assert ok is False
+    assert "speed" in msg
+
+
+def test_replay_attack_detection():
+    validator = SecurityValidator()
+    ok, _ = validator.validate_timestamp_drift(time.time())
+    assert ok is True
+
+    ok, msg = validator.validate_timestamp_drift(time.time() - 100)
+    assert ok is False
+    assert "Replay attack" in msg
